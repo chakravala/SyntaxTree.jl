@@ -1,32 +1,36 @@
+__precompile__()
 module SyntaxTree
 
-export linefilter
+#   This file is part of SyntaxTree.jl. It is licensed under the MIT license
+#   Copyright (C) 2018 Michael Reed
+
+export linefilter, callcount
 
 """
     linefilter(::Expr)
 
 Recursively filters out :line blocks from Expr objects
 """
-@noinline function linefilter(e::Expr)
-    total = length(e.args)
+@noinline function linefilter(expr::Expr)
+    total = length(expr.args)
     i = 0
     while i < total
         i += 1
-        if e.args[i] |> typeof == Expr
-            if e.args[i].head == :line
-                deleteat!(e.args,i)
+        if expr.args[i] |> typeof == Expr
+            if expr.args[i].head == :line
+                deleteat!(expr.args,i)
                 total -= 1
                 i -= 1
             else
-                e.args[i] = linefilter(e.args[i])
+                expr.args[i] = linefilter(expr.args[i])
             end
-        elseif e.args[i] |> typeof == LineNumberNode
-            deleteat!(e.args,i)
+        elseif expr.args[i] |> typeof == LineNumberNode
+            deleteat!(expr.args,i)
             total -= 1
             i -= 1
         end
     end
-    return e
+    return expr
 end
 
 """
@@ -34,51 +38,103 @@ end
 
 Make a substitution to convert numerical values to type T
 """
-function sub(T::DataType,ixpr)
-    if typeof(ixpr) == Expr
-        expr = deepcopy(ixpr)
-        if expr.head == :call && expr.args[1] == :^
-            expr.args[2] = sub(T,expr.args[2])
-            if typeof(expr.args[3]) == Expr
-                expr.args[3] = sub(T,expr.args[3])
+@noinline function sub(T::DataType,expr)
+    if typeof(expr) == Expr
+        ixpr = deepcopy(expr)
+        if ixpr.head == :call && ixpr.args[1] == :^
+            ixpr.args[2] = sub(T,ixpr.args[2])
+            if typeof(ixpr.args[3]) == Expr
+                ixpr.args[3] = sub(T,ixpr.args[3])
             end
-        elseif expr.head == :macrocall &&
-                expr.args[1] ∈ [Symbol("@int128_str"), Symbol("@big_str")]
-            return convert(T,eval(expr))
+        elseif ixpr.head == :macrocall &&
+                ixpr.args[1] ∈ [Symbol("@int128_str"), Symbol("@big_str")]
+            return convert(T,eval(ixpr))
         else
-            for a ∈ 1:length(expr.args)
-                expr.args[a] = sub(T,expr.args[a])
+            for a ∈ 1:length(ixpr.args)
+                ixpr.args[a] = sub(T,ixpr.args[a])
             end
         end
-        return expr
-    elseif typeof(ixpr) <: Number
-        return convert(T,ixpr)
+        return ixpr
+    elseif typeof(expr) <: Number
+        return convert(T,expr)
     end
-    return ixpr
+    return expr
 end
 
-function makeabs(ixpr)
-    if typeof(ixpr) == Expr
-        expr = deepcopy(ixpr)
-        if expr.head == :call && expr.args[1] == :^
-            expr.args[2] = makeabs(expr.args[2])
-            if typeof(expr.args[3]) == Expr
-                expr.args[3] = makeabs(expr.args[3])
+"""
+    SyntaxTree.abs(expr)
+
+Apply `abs` to the expression recursively
+"""
+@noinline function abs(expr)
+    if typeof(expr) == Expr
+        ixpr = deepcopy(expr)
+        if ixpr.head == :call && ixpr.args[1] == :^
+            ixpr.args[2] = abs(ixpr.args[2])
+            if typeof(ixpr.args[3]) == Expr
+                ixpr.args[3] = abs(ixpr.args[3])
             end
-        elseif expr.head == :macrocall &&
-                expr.args[1] ∈ [Symbol("@int128_str"), Symbol("@big_str")]
-            return abs(expr)
+        elseif ixpr.head == :macrocall &&
+                ixpr.args[1] ∈ [Symbol("@int128_str"), Symbol("@big_str")]
+            return Base.abs(ixpr)
         else
-            expr.head == :call && expr.args[1] == :- && (expr.args[1] = :+)
-            for a ∈ 1:length(expr.args)
-                expr.args[a] = makeabs(expr.args[a])
+            ixpr.head == :call && ixpr.args[1] == :- && (ixpr.args[1] = :+)
+            for a ∈ 1:length(ixpr.args)
+                ixpr.args[a] = abs(ixpr.args[a])
             end
         end
-        return expr
-    elseif typeof(ixpr) <: Number
-        return abs(ixpr)
+        return ixpr
+    elseif typeof(expr) <: Number
+        return Base.abs(expr)
     end
-    return ixpr
+    return expr
 end
+
+"""
+    alg(expr,f=:(1+ϵ))
+
+Recursively substitutes a multiplication by (1+ϵ) per call in `expr`
+"""
+@noinline function alg(expr,f=:(1+ϵ))
+    if typeof(expr) == Expr
+        ixpr = deepcopy(expr)
+        if ixpr.head == :call
+            ixpr.args[2:end] = alg.(ixpr.args[2:end],f)
+            ixpr = Expr(:call,:*,f,ixpr)
+        end
+        return ixpr
+    else
+        return expr
+    end
+end
+
+"""
+    genfun(expr,args)
+
+Returns an anonymous function based on the given `expr` and `args`.
+"""
+function genfun(expr,args)
+    gs = gensym()
+    eval(Expr(:function,:($gs(x)),expr))
+    return x->Base.invokelatest(eval(gs),x)
+end
+
+"""
+    callcount(expr)
+
+Returns a count of the `call` operations in `expr`.
+"""
+@noinline function callcount(expr)
+    c = 0
+    if typeof(expr) == Expr
+        expr.head == :call && (c += 1)
+        c += sum(callcount.(expr.args))
+    end
+    return c
+end
+
+#include("exprval.jl")
+
+__init__() = nothing
 
 end # module
