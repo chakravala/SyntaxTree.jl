@@ -4,7 +4,7 @@ module SyntaxTree
 #   This file is part of SyntaxTree.jl. It is licensed under the MIT license
 #   Copyright (C) 2018 Michael Reed
 
-export linefilter, callcount
+export linefilter, callcount, genfun, @genfun
 
 """
     linefilter(::Expr)
@@ -109,19 +109,28 @@ Recursively substitutes a multiplication by (1+ϵ) per call in `expr`
 end
 
 """
-    genfun(expr, args::Array, typ::DataType)
+    @genfun(expr, args)
 
 Returns an anonymous function based on the given `expr` and `args`.
+
+```Julia
+julia> @genfun x^2+y^2 [x,y]
+```
 """
-function genfun(expr,args::Array,typ=Any)
-    gs = gensym()
-    eval(Expr(:function,Expr(:call,gs,args...),expr))
-    list = Symbol[]
-    for arg ∈ args
-        push!(list,typeof(arg) == Expr ? arg.args[1] : arg)
-    end
-    eval(:($(Expr(:tuple,list...))->Base.invokelatest($gs,$(list...))::$typ))
+macro genfun(expr,args)
+    :($(Expr(:tuple,args.args...))->$expr)
 end
+
+"""
+    genfun(expr, args::Array)
+
+Returns an anonymous function based on the given `expr` and `args`.
+
+```Julia
+julia> genfun(:(x^2+y^2),[:x,:y])
+```
+"""
+genfun(expr,args) = :(@genfun $expr [$(args...)]) |> eval
 
 """
     callcount(expr)
@@ -137,7 +146,7 @@ Returns a count of the `call` operations in `expr`.
     return c
 end
 
-#include("exprval.jl")
+include("exprval.jl")
 
 __init__() = nothing
 
