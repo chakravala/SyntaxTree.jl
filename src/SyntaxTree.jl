@@ -109,6 +109,20 @@ Recursively substitutes a multiplication by (1+ϵ) per call in `expr`
 end
 
 """
+    @genfun(expr, args)
+
+Returns an anonymous function based on the given `expr` and `args`.
+
+```Julia
+julia> @genfun x^2+y^2 [x,y]
+```
+"""
+macro genfun(expr,args,gs = gensym())
+    eval(Expr(:function,Expr(:call,gs,args.args...),expr))
+    :($(Expr(:tuple,args.args...))->Base.invokelatest($gs,$(args.args...)))
+end
+
+"""
     genfun(expr, args::Array)
 
 Returns an anonymous function based on the given `expr` and `args`.
@@ -118,7 +132,7 @@ julia> genfun(:(x^2+y^2),[:x,:y])
 ```
 """
 function genfun(expr,args::Array,gs=gensym())
-    eval(Expr(:function,Expr(:call,gs,args...),expr))
+    eval(Expr(:function,Expr(:call,gs,args...),expr)) 
     if length(args) == 0
         ()->Base.invokelatest(eval(gs))
     elseif length(args) == 1
