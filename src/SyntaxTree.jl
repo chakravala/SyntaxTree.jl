@@ -115,8 +115,22 @@ Returns an anonymous function based on the given `expr` and `args`.
 """
 function genfun(expr,args)
     gs = gensym()
-    eval(Expr(:function,:($gs(x)),expr))
-    return x->Base.invokelatest(eval(gs),x)
+    eval(Expr(:function,Expr(:call,gs,args...),expr))
+    if length(args) == 1
+        return x->Base.invokelatest(eval(gs),x)
+    elseif length(args) == 2
+        return (x,y)->Base.invokelatest(eval(gs),x,y)
+    elseif length(args) == 3
+        return (x,y,z)->Base.invokelatest(eval(gs),x,y,z)
+    elseif length(args) == 4
+        return (x,y,z,a)->Base.invokelatest(eval(gs),x,y,z,a)
+    elseif length(args) == 5
+        return (x,y,z,a,b)->Base.invokelatest(eval(gs),x,y,z,a,b)
+    elseif length(args) == 6
+        return (x,y,z,a,b,c)->Base.invokelatest(eval(gs),x,y,z,a,b,c)
+    elseif length(args) == 7
+        return (x,y,z,a,b,c,d)->Base.invokelatest(eval(gs),x,y,z,a,b,c,d)
+    end
 end
 
 """
