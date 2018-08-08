@@ -99,7 +99,7 @@ Recursively substitutes a multiplication by (1+ϵ) per call in `expr`
     if typeof(expr) == Expr
         ixpr = deepcopy(expr)
         if ixpr.head == :call
-            ixpr.args[2:end] = alg.(ixpr.args[2:end],f)
+            ixpr.args[2:end] = alg.(ixpr.args[2:end],Ref(f))
             ixpr = Expr(:call,:*,f,ixpr)
         end
         return ixpr
@@ -166,7 +166,7 @@ Returns a count of the `call` operations in `expr`.
     return c
 end
 
-#include("exprval.jl")
+include("exprval.jl")
 
 __init__() = nothing
 
