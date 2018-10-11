@@ -48,5 +48,5 @@ function exprval(expr)
     val = expravg(expr)
     cal = callcount(expr)
     mal = sqrt(exprdev(expr,val[2],cal))
-    sqrt(val[2]*mal)*val[4]*cal, mal, cal, val[2], val[4]
+    sqrt(abs(val[2]*mal))*val[4]*cal, mal, cal, val[2], val[4]
 end
