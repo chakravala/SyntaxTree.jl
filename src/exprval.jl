@@ -29,7 +29,7 @@ function expravg(expr)
         cs += 1
         s  += log(abs(expr))
     end
-    return (cs,cs == 0 ? 0.0 : s/cs,cp,cp == 0 ? 1.0 : p/cp)
+    return (cs,0 ∈ [s,cs] ? 1.0 : s/cs,cp,cp == 0 ? 1.0 : p/cp)
 end
 
 function exprdev(expr,val,cal)
@@ -48,5 +48,5 @@ function exprval(expr)
     val = expravg(expr)
     cal = callcount(expr)
     mal = sqrt(exprdev(expr,val[2],cal))
-    sqrt(abs(val[2]*mal))*val[4]*cal, mal, cal, val[2], val[4]
+    cal*sqrt(abs(val[2])*mal)*val[4], cal, mal, val[2], val[4]
 end
