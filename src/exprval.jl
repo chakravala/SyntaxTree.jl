@@ -1,6 +1,11 @@
 #   This file is part of SyntaxTree.jl. It is licensed under the MIT license
 #   Copyright (C) 2018 Michael Reed
 
+"""
+    expravg(expr)
+
+Recursively obtains the number of scalars in an expression, the average of those scalars, the number of non-trivial exponents in the expression, and the average of the exponents.
+"""
 function expravg(expr)
     cs = 0
     s = 0.0
@@ -32,7 +37,13 @@ function expravg(expr)
     return (cs,0 ∈ [s,cs] ? 1.0 : s/cs,cp,cp == 0 ? 1.0 : p/cp)
 end
 
-function exprdev(expr,val,cal)
+
+"""
+    exprdev(expr)
+
+Returns the standard deviation of the logarithm of the scalars in an expression.
+"""
+function exprdev(expr,val=expravg(expr),cal=callcout(expr))
     s = 0.0
     if typeof(expr) == Expr
         for arg ∈ expr.args
@@ -44,6 +55,12 @@ function exprdev(expr,val,cal)
     return s
 end
 
+
+"""
+    exprval(expr)
+
+Returns the expression value and other characteristics as defined in "Optimal polynomial characteristic methods" by Michael Reed in 2018. This value can be used to order polynomial forms, with lower values being more optimal and efficient for computation.
+"""
 function exprval(expr)
     val = expravg(expr)
     cal = callcount(expr)
