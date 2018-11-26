@@ -6,12 +6,18 @@ module SyntaxTree
 
 export linefilter, callcount, genfun, @genfun
 
-"""
-    linefilter(::Expr)
+if VERSION < v"0.7.0"
+    linefilter(expr) = linefilter!(expr)
+else
+    @deprecate linefilter(expr) linefilter!(expr)
+end
 
-Recursively filters out :line blocks from Expr objects
 """
-@noinline function linefilter(expr::Expr)
+    linefilter!(::Expr)
+
+Recursively filters out `:LineNumberNode` from `Expr` objects.
+"""
+@noinline function linefilter!(expr::Expr)
     total = length(expr.args)
     i = 0
     while i < total
@@ -114,13 +120,13 @@ end
 Returns an anonymous function based on the given `expr` and `args`.
 
 ```Julia
-julia> @genfun x^2+y^2 [x,y]
+julia> @genfun x^2+y^2 x y
 ```
 """
 macro genfun(expr,args...); :(($(args...),)->$expr) end
 
 """
-    genfun(expr, args::Array)
+    genfun(expr, args)
 
 Returns an anonymous function based on the given `expr` and `args`.
 
@@ -129,7 +135,8 @@ julia> genfun(:(x^2+y^2),[:x,:y])
 ```
 """
 genfun(expr,args::Array) = eval(:(($(args...),)->$expr))
-genfun(expr,arg::Symbol) = eval(:($arg->$expr))
+genfun(expr,args::Symbol...) = genfun(expr,args)
+genfun(expr,args::Tuple) = eval(:($args->$expr))
 
 """
     callcount(expr)

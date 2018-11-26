@@ -43,7 +43,7 @@ end
 
 Returns the standard deviation of the logarithm of the scalars in an expression.
 """
-function exprdev(expr,val=expravg(expr),cal=callcout(expr))
+function exprdev(expr,val=expravg(expr)[2],cal=callcount(expr))
     s = 0.0
     if typeof(expr) == Expr
         for arg ∈ expr.args
