@@ -1,10 +1,9 @@
-__precompile__()
 module SyntaxTree
 
 #   This file is part of SyntaxTree.jl. It is licensed under the MIT license
 #   Copyright (C) 2018 Michael Reed
 
-export linefilter, callcount, genfun, @genfun
+export linefilter!, linefilter, callcount, genfun, @genfun
 
 if VERSION < v"0.7.0"
     linefilter(expr) = linefilter!(expr)
@@ -28,7 +27,7 @@ Recursively filters out `:LineNumberNode` from `Expr` objects.
                 total -= 1
                 i -= 1
             else
-                expr.args[i] = linefilter(expr.args[i])
+                expr.args[i] = linefilter!(expr.args[i])
             end
         elseif expr.args[i] |> typeof == LineNumberNode
             deleteat!(expr.args,i)
@@ -42,7 +41,7 @@ end
 """
     sub(T::DataType,expr::Expr)
 
-Make a substitution to convert numerical values to type T
+Make a substitution to convert numerical values inside an `Expr` to type `T`.
 """
 @noinline function sub(T::DataType,expr)
     if typeof(expr) == Expr
@@ -70,7 +69,7 @@ end
 """
     SyntaxTree.abs(expr)
 
-Apply `abs` to the expression recursively
+Apply `abs` to the expression recursively.
 """
 @noinline function abs(expr)
     if typeof(expr) == Expr
@@ -82,7 +81,9 @@ Apply `abs` to the expression recursively
             end
         elseif ixpr.head == :macrocall &&
                 ixpr.args[1] ∈ [Symbol("@int128_str"), Symbol("@big_str")]
-            return Base.abs(ixpr)
+                val = VERSION < v"0.7" ? (ixpr.args[1],) : (ixpr.args[1],nothing)
+                rep = ('-',"")
+                return Expr(:macrocall,val...,replace(ixpr.args[end],(VERSION < v"0.7" ? rep : (Pair(rep...),))...))
         else
             ixpr.head == :call && ixpr.args[1] == :- && (ixpr.args[1] = :+)
             for a ∈ 1:length(ixpr.args)
@@ -99,7 +100,7 @@ end
 """
     alg(expr,f=:(1+ϵ))
 
-Recursively substitutes a multiplication by (1+ϵ) per call in `expr`
+Recursively insert a machine epsilon bound (1+ϵ) per call in `expr`.
 """
 @noinline function alg(expr,f=:(1+ϵ))
     if typeof(expr) == Expr
@@ -132,11 +133,12 @@ Returns an anonymous function based on the given `expr` and `args`.
 
 ```Julia
 julia> genfun(:(x^2+y^2),[:x,:y])
+julia> genfun(:(x^2+y^2),(:x,:y))
+julia> genfun(:(x^2+y^2),:x,:y)
 ```
 """
-genfun(expr,args::Array) = eval(:(($(args...),)->$expr))
+genfun(expr,args::Union{Vector,Tuple}) = eval(:(($(args...),)->$expr))
 genfun(expr,args::Symbol...) = genfun(expr,args)
-genfun(expr,args::Tuple) = eval(:($args->$expr))
 
 """
     callcount(expr)
@@ -153,7 +155,5 @@ Returns a count of the `call` operations in `expr`.
 end
 
 include("exprval.jl")
-
-__init__() = nothing
 
 end # module

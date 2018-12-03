@@ -4,7 +4,7 @@
 """
     expravg(expr)
 
-Recursively obtains the number of scalars in an expression, the average of those scalars, the number of non-trivial exponents in the expression, and the average of the exponents.
+Recursively obtains the *number of scalars* in an expression, the *average of those scalars* logarithms, the *number of non-trivial exponents* in the expression, and the *average of the exponents*.
 """
 function expravg(expr)
     cs = 0
@@ -60,6 +60,8 @@ end
     exprval(expr)
 
 Returns the expression value and other characteristics as defined in "Optimal polynomial characteristic methods" by Michael Reed in 2018. This value can be used to order polynomial forms, with lower values being more optimal and efficient for computation.
+
+The **first** value is the *expression value*, the **second** is the *number of operations*, the **third** is the *standard deviation* of the logarithms of the scalars, the **fourth** is the *average* of the logarithms of the scalars, and the **fifth** is the *average of the exponents*.
 """
 function exprval(expr)
     val = expravg(expr)
