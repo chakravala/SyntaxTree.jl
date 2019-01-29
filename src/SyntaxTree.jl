@@ -30,9 +30,13 @@ Recursively filters out `:LineNumberNode` from `Expr` objects.
                 expr.args[i] = linefilter!(expr.args[i])
             end
         elseif expr.args[i] |> typeof == LineNumberNode
-            deleteat!(expr.args,i)
-            total -= 1
-            i -= 1
+            if expr.head == :macrocall
+                expr.args[i] = nothing
+            else
+                deleteat!(expr.args,i)
+                total -= 1
+                i -= 1
+            end
         end
     end
     return expr
