@@ -17,5 +17,7 @@ end
 @test SyntaxTree.alg(:(x+1)) == :((1 + ϵ) * (x + 1))
 @test (f = SyntaxTree.genfun(:x,:x); f(1) == 1)
 @test (f = SyntaxTree.genfun(:x,(:x,:y)); f(1,0) == 1)
+@test (f = SyntaxTree.genlatest(:x,:x); f(1) == 1)
+@test (f = SyntaxTree.genlatest(:x,(:x,:y)); f(1,0) == 1)
 @test callcount(:(x+y*z)) == 2
 @test SyntaxTree.exprval(:(x^2-2))[1] == 0.0

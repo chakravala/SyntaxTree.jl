@@ -145,6 +145,53 @@ genfun(expr,args::Union{Vector,Tuple}) = eval(:(($(args...),)->$expr))
 genfun(expr,args::Symbol...) = genfun(expr,args)
 
 """
+    @genlatest(expr, args)
+
+Returns an invokelatest function based on the given `expr` and `args`.
+
+```Julia
+julia> @genlatest x^2+y^2 x y
+```
+"""
+macro genlatest(expr,args,gs = gensym())
+    eval(Expr(:function,Expr(:call,gs,args.args...),expr))
+    :($(Expr(:tuple,args.args...))->Base.invokelatest($gs,$(args.args...)))
+end
+
+"""
+    genlatest(expr, args)
+
+Returns an invokelatest function based on the given `expr` and `args`.
+
+```Julia
+julia> genlatest(:(x^2+y^2),[:x,:y])
+julia> genlatest(:(x^2+y^2),(:x,:y))
+julia> genlatest(:(x^2+y^2),:x,:y)
+```
+"""
+function genlatest(expr,args::T,gs=gensym()) where T<:Union{Vector,Tuple}
+    eval(Expr(:function,Expr(:call,gs,args...),expr))
+    if length(args) == 0
+        ()->Base.invokelatest(eval(gs))
+    elseif length(args) == 1
+        (a)->Base.invokelatest(eval(gs),a)
+    elseif length(args) == 2
+        (a,b)->Base.invokelatest(eval(gs),a,b)
+    elseif length(args) == 3
+        (a,b,c)->Base.invokelatest(eval(gs),a,b,c)
+    elseif length(args) == 4
+        (a,b,c,d)->Base.invokelatest(eval(gs),a,b,c,d)
+    elseif length(args) == 5
+        (a,b,c,d,e)->Base.invokelatest(eval(gs),a,b,c,d,e)
+    elseif length(args) == 6
+        (a,b,c,d,e,f)->Base.invokelatest(eval(gs),a,b,c,d,e,f)
+    elseif length(args) == 7
+        (a,b,c,d,e,f,g)->Base.invokelatest(eval(gs),a,b,c,d,e,f,g)
+    end
+end
+genlatest(expr,arg,gs=gensym()) = genlatest(expr,(arg,),gs)
+
+"""
     callcount(expr)
 
 Returns a count of the `call` operations in `expr`.

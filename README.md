@@ -11,7 +11,7 @@
 [![Coverage Status](https://coveralls.io/repos/chakravala/SyntaxTree.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/chakravala/SyntaxTree.jl?branch=master)
 [![codecov.io](http://codecov.io/github/chakravala/SyntaxTree.jl/coverage.svg?branch=master)](http://codecov.io/github/chakravala/SyntaxTree.jl?branch=master)
 
-This package is a general purpose toolkit intended for manipulations of Julia's AST. It contains methods like `linefilter!`, `callcount`, `genfun`, and `exprval`.
+This package is a general purpose toolkit intended for manipulations of Julia's AST. It contains methods like `linefilter!`, `callcount`, `genfun`, `genlatest`, and `exprval`.
 Certain useful expression transformations are also possible, such as the `SyntaxTree.sub` method to convert scalar values to a single type, `SyntaxTree.abs` to apply `Base.abs` to all scalars and operations, and also `SyntaxTree.alg` to introduce an algebraic machine epsilon bound at each operation.
 
 The `exprval` method to compute the expression value is defined in "Optimal polynomial characteristic methods" by Michael Reed in 2018 with the supporting `expravg` and `exprdev` methods to compute scalar averages and standard deviations for expressions. The expression value can be used to order equivalent forms of an expression, where lower values are more optimal and computationally efficient.
@@ -70,6 +70,7 @@ julia> b = genfun(:(x^2-y^2),[:x,:y])
 julia> b(5,4)
 9
 ```
+Optionally, `genlatest` or `@genlatest` can be used if `Base.invokelatest` is needed.
 
 Obtain the number of `call` operations in an expression:
 ```Julia
