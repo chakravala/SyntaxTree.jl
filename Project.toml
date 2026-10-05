@@ -1,6 +1,6 @@
 name = "SyntaxTree"
 uuid = "a4af3ec5-f8ac-5fed-a759-c2e80b4d74cb"
-version = "1.0.1"
+version = "1.0.2"
 
 [compat]
 julia = "0.6 - 1"
